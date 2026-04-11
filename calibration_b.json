@@ -1,0 +1,32 @@
+{
+  "camera_id": "camera_b",
+  "camera_source": "with_creatine.png",
+  "camera_pose": {
+    "x": 0.0,
+    "y": 0.0,
+    "heading_rad": 0.0
+  },
+  "world_width_m": 0.52,
+  "world_height_m": 0.28,
+  "api_url": "http://localhost:8000",
+  "homography": [
+    [
+      -0.00048358868128875346,
+      0.0005074296327095624,
+      0.0248855382923206
+    ],
+    [
+      9.398295357137062e-05,
+      0.00018994639083868984,
+      -0.31821547815431955
+    ],
+    [
+      -5.186530839085633e-05,
+      0.0003094291404427608,
+      1.0
+    ]
+  ],
+  "yolo_model": "yolov8n.pt",
+  "conf_threshold": 0.4,
+  "ingest_fps": 10.0
+}

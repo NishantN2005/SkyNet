@@ -1,0 +1,33 @@
+{
+  "camera_id": "camera_a",
+  "camera_source": 0,
+  "camera_pose": {
+    "x": 0.0,
+    "y": 0.0,
+    "heading_rad": 0.0
+  },
+  "world_width_m": 0.546,
+  "world_height_m": 0.279,
+  "api_url": "http://localhost:8000",
+  "homography": [
+    [
+      0.0005358263611591408,
+      0.0005056389605304566,
+      -0.33248403052432546
+    ],
+    [
+      -0.0002639726011115768,
+      0.0007226896947098808,
+      0.10354584075269345
+    ],
+    [
+      0.00014577504827929246,
+      0.00048780996250857617,
+      1.0
+    ]
+  ],
+  "yolo_model": "yolov8n.pt",
+  "conf_threshold": 0.4,
+  "ingest_fps": 10.0,
+  "use_slam_pose": false
+}
