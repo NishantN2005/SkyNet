@@ -376,7 +376,7 @@ def main() -> None:
     parser.add_argument("--cameras", nargs="+", type=int, default=[0, 1],
                         help="Camera IDs to ingest (default: 0 1)")
     parser.add_argument("--api-url", default="http://localhost:8000")
-    parser.add_argument("--fps", type=float, default=5.0,
+    parser.add_argument("--fps", type=float, default=25.0,
                         help="Ingest rate in frames per second")
     parser.add_argument("--world-width", type=float, default=6.0,
                         help="World width in metres")

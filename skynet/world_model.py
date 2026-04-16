@@ -106,6 +106,13 @@ class WorldModel:
             )
             self._last_decay_time = now
 
+            # 5. Prune stale objects (not seen in the last 2 seconds)
+            cutoff = now - 2.0
+            self._objects = {
+                oid: obj for oid, obj in self._objects.items()
+                if obj.timestamp >= cutoff
+            }
+
     # ------------------------------------------------------------------
     # Read path
     # ------------------------------------------------------------------

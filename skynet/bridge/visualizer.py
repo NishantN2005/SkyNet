@@ -62,8 +62,8 @@ def _camera_color(camera_id: str) -> list[int]:
 # Scene setup (logged once)
 # ---------------------------------------------------------------------------
 
-def _log_static_scene(world_w: float, world_h: float, camera_ids: list[str]) -> None:
-    """Log the floor plane and camera markers (static, logged once)."""
+def _log_static_scene(world_w: float, world_h: float) -> None:
+    """Log the floor plane grid (static, logged once)."""
 
     # Floor grid
     grid_lines = []
@@ -76,7 +76,7 @@ def _log_static_scene(world_w: float, world_h: float, camera_ids: list[str]) -> 
         rr.log(f"world/grid/line_{i}", rr.LineStrips3D(
             [np.array([p0, p1])],
             colors=[[60, 60, 80]],
-        ))
+        ), static=True)
 
     # Floor outline
     corners = np.array([
@@ -85,31 +85,60 @@ def _log_static_scene(world_w: float, world_h: float, camera_ids: list[str]) -> 
     ], dtype=float)
     rr.log("world/floor_outline", rr.LineStrips3D(
         [corners], colors=[[100, 100, 120]], radii=0.01
-    ))
+    ), static=True)
 
-    # Camera markers — simple box at approximate positions
-    cam_positions = {
-        "camera_0": [0.0, world_h / 2, 0.5],
-        "camera_1": [world_w, world_h / 2, 0.5],
-        "camera_2": [world_w / 2, 0.0, 0.5],
-        "camera_3": [world_w / 2, world_h, 0.5],
+
+def _log_cameras(world: "WorldState", world_w: float, world_h: float) -> None:
+    """
+    Log camera positions for the POM lab sequence.
+
+    The homography maps image pixels to floor coords — it does NOT tell us
+    where the camera physically sits. For the POM 6p lab sequence the cameras
+    are corner-mounted on the walls at ~2m height, angled slightly downward
+    toward the room centre.
+
+    Positions (metres, from dataset layout):
+      camera_0 — top-left corner  (0, 0)
+      camera_1 — top-right corner (world_w, 0)
+      camera_2 — bottom-right     (world_w, world_h)
+      camera_3 — bottom-left      (0, world_h)
+    """
+    cam_height = 2.0   # wall mount height in POM lab (metres)
+    tilt = -0.6        # downward Z component of look direction
+
+    wall_positions = {
+        "camera_0": [world_w, world_h / 2, cam_height],   # right wall, pointing left
+        "camera_1": [0.0,     world_h / 2, cam_height],   # left wall, pointing right
+        "camera_2": [world_w, world_h,     cam_height],
+        "camera_3": [0.0,     world_h,     cam_height],
     }
 
-    for cam_id in camera_ids:
-        pos = cam_positions.get(cam_id, [world_w / 2, world_h / 2, 0.5])
-        color = _camera_color(cam_id)
-        rr.log(f"world/cameras/{cam_id}", rr.Points3D(
+    room_cx = world_w / 2
+    room_cy = world_h / 2
+
+    for robot_id in world.robot_states:
+        pos = wall_positions.get(robot_id, [room_cx, room_cy, cam_height])
+        color = _camera_color(robot_id)
+
+        rr.log(f"world/cameras/{robot_id}", rr.Points3D(
             positions=[pos],
             colors=[color],
             radii=0.15,
-            labels=[cam_id],
-        ))
-        # Log downward-pointing arrow to show camera direction
-        rr.log(f"world/cameras/{cam_id}/arrow", rr.Arrows3D(
+            labels=[robot_id],
+        ), static=True)
+
+        # Arrow pointing toward room centre, angled slightly downward
+        dx = room_cx - pos[0]
+        dy = room_cy - pos[1]
+        length = (dx**2 + dy**2) ** 0.5
+        if length > 0:
+            dx, dy = dx / length * 1.5, dy / length * 1.5
+
+        rr.log(f"world/cameras/{robot_id}/arrow", rr.Arrows3D(
             origins=[pos],
-            vectors=[[0, 0, -0.4]],
+            vectors=[[dx, dy, tilt]],
             colors=[color],
-        ))
+        ), static=True)
 
 
 # ---------------------------------------------------------------------------
@@ -179,17 +208,6 @@ def _log_world_state(
             radii=0.12,
         ), static=True)
 
-    # Robot/camera states as small spheres showing last known pose
-    for robot_id, robot in world.robot_states.items():
-        rx = robot.pose.x
-        ry = robot.pose.y
-        color = _camera_color(robot_id)
-        rr.log(f"world/robots/{robot_id}", rr.Points3D(
-            positions=[[rx, ry, 0.1]],
-            colors=[color],
-            radii=0.08,
-        ), static=True)
-
     # Summary text
     n_total = len(world.objects)
     n_ghost = sum(1 for o in world.objects.values() if o.observed_by != primary_camera)
@@ -208,11 +226,8 @@ def run_visualizer(
     world_w: float = 6.0,
     world_h: float = 5.0,
     primary_camera: str = "camera_0",
-    camera_ids: list[str] | None = None,
     refresh_hz: float = 5.0,
 ) -> None:
-    if camera_ids is None:
-        camera_ids = ["camera_0", "camera_1"]
 
     # Init Rerun
     rr.init("SkyNet WorldModel", spawn=True)
@@ -230,9 +245,10 @@ def run_visualizer(
     rr.send_blueprint(blueprint)
 
     # Log static scene elements
-    _log_static_scene(world_w, world_h, camera_ids)
+    _log_static_scene(world_w, world_h)
 
     interval = 1.0 / refresh_hz
+    logged_cameras: set[str] = set()
     print(f"SkyNet Rerun visualizer running at {refresh_hz}Hz")
     print("Rerun viewer should open automatically.")
     print("Ctrl+C to stop.\n")
@@ -242,6 +258,11 @@ def run_visualizer(
             t0 = time.time()
             world = _fetch_world(api_url)
             if world is not None:
+                # Log camera positions for any newly seen robot
+                new_cameras = set(world.robot_states) - logged_cameras
+                if new_cameras:
+                    _log_cameras(world, world_w, world_h)
+                    logged_cameras.update(world.robot_states)
                 _log_world_state(world, primary_camera, world_w, world_h)
             else:
                 print("WARNING: Cannot reach WorldModel server")
@@ -267,9 +288,7 @@ def main() -> None:
     parser.add_argument("--world-height", type=float, default=5.0)
     parser.add_argument("--primary-camera", default="camera_0",
                         help="Camera whose detections are shown in blue (not ghosts)")
-    parser.add_argument("--cameras", nargs="+",
-                        default=["camera_0", "camera_1"])
-    parser.add_argument("--refresh-hz", type=float, default=5.0)
+    parser.add_argument("--refresh-hz", type=float, default=30.0)
     args = parser.parse_args()
 
     run_visualizer(
@@ -277,7 +296,6 @@ def main() -> None:
         world_w=args.world_width,
         world_h=args.world_height,
         primary_camera=args.primary_camera,
-        camera_ids=args.cameras,
         refresh_hz=args.refresh_hz,
     )
 
