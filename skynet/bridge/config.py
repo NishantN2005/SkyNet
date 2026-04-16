@@ -46,11 +46,6 @@ class CameraConfig:
     conf_threshold: float = 0.4
     ingest_fps: float = 10.0               # max frames per second to POST
 
-    # If True, camera_bridge fetches live pose from GET /slam_pose/{camera_id}
-    # each frame instead of using the static camera_pose above.
-    # Set to True when the ARKit iPhone app is running.
-    use_slam_pose: bool = False
-
 
 def load_config(path: str | Path) -> CameraConfig:
     """Load a CameraConfig from a JSON file."""

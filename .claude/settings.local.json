@@ -4,7 +4,19 @@
       "Bash(curl -s http://localhost:8000/world)",
       "Bash(python3 -m json.tool)",
       "Bash(source venv/bin/activate)",
-      "Bash(python -m skynet.bridge.reveal --config-a calibration_a_live.json --out reveal_live.png)"
+      "Bash(python -m skynet.bridge.reveal --config-a calibration_a_live.json --out reveal_live.png)",
+      "WebSearch",
+      "WebFetch(domain:www.epfl.ch)",
+      "WebFetch(domain:infoscience.epfl.ch)",
+      "WebFetch(domain:github.com)",
+      "Bash(mkdir -p /Users/nishant/Desktop/SkyNet/datasets/pom_lab)",
+      "Bash(curl -L -o calibration-6p.txt \"https://www.epfl.ch/labs/cvlab/wp-content/uploads/2018/08/calibration-6p.txt\")",
+      "Bash(curl -L -o gt_lab_6p.txt \"https://www.epfl.ch/labs/cvlab/wp-content/uploads/2018/08/gt_lab_6p.txt\")",
+      "Bash(curl -L -o 6p-c0.avi \"http://documents.epfl.ch/groups/c/cv/cvlab-pom-video1/www/6p-c0.avi\" -#)",
+      "Bash(curl -L -o 6p-c1.avi \"http://documents.epfl.ch/groups/c/cv/cvlab-pom-video1/www/6p-c1.avi\" -#)",
+      "Bash(wait)",
+      "Bash(ls -lh /Users/nishant/Desktop/SkyNet/datasets/pom_lab/*.avi)",
+      "Bash(curl -s http://localhost:8000/health)"
     ]
   }
 }

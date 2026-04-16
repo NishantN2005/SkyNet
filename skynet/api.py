@@ -13,13 +13,10 @@ Robots then POST to http://localhost:8000/ingest and GET /query.
 
 from __future__ import annotations
 
-import time
-import threading
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 
 from skynet.models import (
     ObservationReport,
@@ -41,19 +38,6 @@ app = FastAPI(
 # (override app.dependency_overrides or monkeypatch _world_model).
 _world_model = WorldModel()
 _query_engine = QueryEngine(_world_model)
-
-# In-memory store for live SLAM poses keyed by camera_id
-_slam_poses: dict[str, dict] = {}
-_slam_poses_lock = threading.Lock()
-
-
-class SlamPoseReport(BaseModel):
-    camera_id: str
-    x: float          # world X in metres (relative to Set Origin point)
-    y: float          # world Y in metres
-    heading_rad: float
-    confidence: float = 1.0   # ARKit tracking confidence 0-1
-    timestamp: float = 0.0    # Unix epoch; 0 = server fills it in
 
 
 # ---------------------------------------------------------------------------
@@ -140,48 +124,3 @@ def get_world() -> WorldState:
 def get_robots() -> list[RobotState]:
     """Return the last known state of all active robots."""
     return list(_world_model.get_robot_states().values())
-
-
-# ---------------------------------------------------------------------------
-# SLAM pose endpoints (used by Path A: ARKit iPhone app)
-# ---------------------------------------------------------------------------
-
-
-@app.post("/slam_pose", tags=["slam"], status_code=200)
-def post_slam_pose(report: SlamPoseReport) -> dict:
-    """
-    Receive a live ARKit pose from the iPhone app.
-
-    The app sends this ~10 Hz after the user taps 'Set Origin'.
-    Coordinates are in the table's world frame (metres), with the origin
-    at the TL corner of the calibrated surface.
-    """
-    with _slam_poses_lock:
-        _slam_poses[report.camera_id] = {
-            "camera_id": report.camera_id,
-            "x": report.x,
-            "y": report.y,
-            "heading_rad": report.heading_rad,
-            "confidence": report.confidence,
-            "timestamp": report.timestamp if report.timestamp > 0 else time.time(),
-        }
-    return {"status": "ok", "camera_id": report.camera_id}
-
-
-@app.get("/slam_pose/{camera_id}", tags=["slam"])
-def get_slam_pose(camera_id: str) -> dict:
-    """
-    Return the most recent SLAM pose for a given camera_id.
-
-    Used by camera_bridge.py to get a live pose instead of the static
-    camera_pose from the calibration JSON.
-    """
-    with _slam_poses_lock:
-        pose = _slam_poses.get(camera_id)
-    if pose is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No SLAM pose received yet for camera_id={camera_id!r}. "
-                   "Is the iPhone app running and origin set?",
-        )
-    return pose

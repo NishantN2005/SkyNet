@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environment
+venv/
+env/
+
+# YOLO model weights
+*.pt
+
+# Calibration outputs (machine-specific)
+calibration_*.json
+
+# Demo outputs
+*.png
+*.mp4
+*.avi
+
+# Datasets (too large for git)
+datasets/
+
+# macOS
+.DS_Store

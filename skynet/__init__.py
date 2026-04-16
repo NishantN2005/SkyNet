@@ -6,10 +6,7 @@ Every robot's effective perception = the fleet's combined FOV.
 
 Quick start:
     from skynet.world_model import WorldModel
-    from skynet.simulation import Robot, Obstacle, WorldObject, SimWorld
     from skynet.queries import QueryEngine
-
-    See skynet/main.py for a full demo.
 """
 
 from skynet.models import (
