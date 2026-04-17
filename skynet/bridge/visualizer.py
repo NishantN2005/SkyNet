@@ -227,25 +227,53 @@ def run_visualizer(
     world_h: float = 5.0,
     primary_camera: str = "camera_0",
     refresh_hz: float = 5.0,
+    camera_ids: list[str] | None = None,
+    video_paths: dict[str, str] | None = None,
 ) -> None:
 
-    # Init Rerun
-    rr.init("SkyNet WorldModel", spawn=True)
+    # Init Rerun with a fixed recording ID so pom_ingest can join the same session
+    rr.init("SkyNet WorldModel", recording_id="skynet-live", spawn=True)
 
-    # Set up blueprint — 3D view + text log panel, timeline follows latest frame
+    # Build blueprint — 3D world on top, camera feeds on bottom
+    cam_panels = [
+        rrb.Spatial2DView(name=cam_id, origin=f"cameras/{cam_id}")
+        for cam_id in (camera_ids or [])
+    ]
+
+    top_row = rrb.Horizontal(
+        rrb.Spatial3DView(name="World Model", origin="world"),
+        rrb.TextLogView(name="Status Log", origin="world/status"),
+        column_shares=[4, 1],
+    )
+
+    if cam_panels:
+        layout = rrb.Vertical(
+            top_row,
+            rrb.Horizontal(*cam_panels),
+            row_shares=[3, 2],
+        )
+    else:
+        layout = top_row
+
     blueprint = rrb.Blueprint(
-        rrb.Horizontal(
-            rrb.Spatial3DView(name="World Model", origin="world"),
-            rrb.TextLogView(name="Status Log", origin="world/status"),
-            column_shares=[4, 1],
-        ),
+        layout,
         rrb.BlueprintPanel(state="collapsed"),
-        rrb.TimePanel(state="collapsed"),
+        rrb.TimePanel(state="expanded"),
     )
     rr.send_blueprint(blueprint)
 
     # Log static scene elements
     _log_static_scene(world_w, world_h)
+
+    # Open video captures for camera feed display
+    import cv2
+    caps: dict[str, cv2.VideoCapture] = {}
+    if video_paths:
+        for cam_id, path in video_paths.items():
+            cap = cv2.VideoCapture(path)
+            if cap.isOpened():
+                caps[cam_id] = cap
+                print(f"Opened video for {cam_id}: {path}")
 
     interval = 1.0 / refresh_hz
     logged_cameras: set[str] = set()
@@ -256,6 +284,17 @@ def run_visualizer(
     try:
         while True:
             t0 = time.time()
+
+            # Log camera frames
+            for cam_id, cap in caps.items():
+                ret, frame = cap.read()
+                if not ret:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    ret, frame = cap.read()
+                if ret:
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    rr.log(f"cameras/{cam_id}/image", rr.Image(frame_rgb), static=True)
+
             world = _fetch_world(api_url)
             if world is not None:
                 # Log camera positions for any newly seen robot
@@ -273,6 +312,9 @@ def run_visualizer(
 
     except KeyboardInterrupt:
         print("\nVisualizer stopped.")
+    finally:
+        for cap in caps.values():
+            cap.release()
 
 
 # ---------------------------------------------------------------------------
@@ -288,8 +330,14 @@ def main() -> None:
     parser.add_argument("--world-height", type=float, default=5.0)
     parser.add_argument("--primary-camera", default="camera_0",
                         help="Camera whose detections are shown in blue (not ghosts)")
+    parser.add_argument("--cameras", nargs="*", default=[],
+                        help="Camera IDs to show as 2D feeds (e.g. camera_0 camera_2)")
+    parser.add_argument("--videos", nargs="*", default=[],
+                        help="Video paths paired with --cameras (e.g. path/c0.avi path/c2.avi)")
     parser.add_argument("--refresh-hz", type=float, default=30.0)
     args = parser.parse_args()
+
+    video_paths = dict(zip(args.cameras, args.videos)) if args.videos else None
 
     run_visualizer(
         api_url=args.api_url,
@@ -297,6 +345,8 @@ def main() -> None:
         world_h=args.world_height,
         primary_camera=args.primary_camera,
         refresh_hz=args.refresh_hz,
+        camera_ids=args.cameras,
+        video_paths=video_paths,
     )
 
 
