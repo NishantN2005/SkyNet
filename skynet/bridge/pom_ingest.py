@@ -352,6 +352,17 @@ def run_pom_ingest(
                 print(f"  frame={frame_idx:04d}  cam={cam_id}  "
                       f"detections={len(detected)}  POST={status}")
 
+            # Publish current frame index so the visualizer can seek to it
+            try:
+                client.post(
+                    f"{api_url}/frames",
+                    json={f"camera_{cam_id}": start_frame + frame_idx
+                          for cam_id in camera_ids},
+                    headers={"Content-Type": "application/json"},
+                )
+            except httpx.RequestError:
+                pass
+
             frame_idx += 1
             time.sleep(frame_interval)
 
@@ -387,6 +398,8 @@ def main() -> None:
     parser.add_argument("--start-frame", type=int, default=400,
                         help="Skip to this frame before ingesting (default: 400)")
     parser.add_argument("--max-frames", type=int, default=None)
+    parser.add_argument("--yolo-model", default="yolov8n.pt",
+                        help="YOLO model weights (default: yolov8n.pt)")
     args = parser.parse_args()
 
     run_pom_ingest(
@@ -399,6 +412,7 @@ def main() -> None:
         conf_threshold=args.conf,
         start_frame=args.start_frame,
         max_frames=args.max_frames,
+        yolo_model=args.yolo_model,
     )
 
 

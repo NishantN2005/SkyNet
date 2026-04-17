@@ -107,10 +107,10 @@ def _log_cameras(world: "WorldState", world_w: float, world_h: float) -> None:
     tilt = -0.6        # downward Z component of look direction
 
     wall_positions = {
-        "camera_0": [world_w, world_h / 2, cam_height],   # right wall, pointing left
-        "camera_1": [0.0,     world_h / 2, cam_height],   # left wall, pointing right
-        "camera_2": [world_w, world_h,     cam_height],
-        "camera_3": [0.0,     world_h,     cam_height],
+        "camera_0": [world_w, world_h,     cam_height],   # bottom-right corner
+        "camera_1": [0.0,     world_h / 2, cam_height],   # left wall
+        "camera_2": [world_w, world_h / 2, cam_height],   # right wall
+        "camera_3": [0.0,     world_h,     cam_height],   # bottom-left corner
     }
 
     room_cx = world_w / 2
@@ -285,12 +285,18 @@ def run_visualizer(
         while True:
             t0 = time.time()
 
-            # Log camera frames
+            # Fetch current frame indices from ingest and seek video caps to them
+            try:
+                frame_resp = httpx.get(f"{api_url}/frames", timeout=1.0)
+                frame_indices = frame_resp.json() if frame_resp.status_code == 200 else {}
+            except Exception:
+                frame_indices = {}
+
             for cam_id, cap in caps.items():
+                target = frame_indices.get(cam_id)
+                if target is not None:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, target)
                 ret, frame = cap.read()
-                if not ret:
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                    ret, frame = cap.read()
                 if ret:
                     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     rr.log(f"cameras/{cam_id}/image", rr.Image(frame_rgb), static=True)

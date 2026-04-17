@@ -81,8 +81,22 @@ class WorldModel:
 
             # 2. Fuse detected objects + mark their cells occupied
             for obj in report.detected_objects:
-                existing = self._objects.get(obj.object_id)
-                self._objects[obj.object_id] = self._fuser.fuse_object(existing, obj)
+                # Proximity deduplication: if a nearby object from a different
+                # camera already exists within 0.5m, merge into it instead of
+                # creating a duplicate entry.
+                merge_id = None
+                for oid, existing_obj in self._objects.items():
+                    if existing_obj.observed_by == obj.observed_by:
+                        continue
+                    dx = existing_obj.position.x - obj.position.x
+                    dy = existing_obj.position.y - obj.position.y
+                    if (dx * dx + dy * dy) <= 0.25:  # 0.5m radius
+                        merge_id = oid
+                        break
+
+                target_id = merge_id if merge_id else obj.object_id
+                existing = self._objects.get(target_id)
+                self._objects[target_id] = self._fuser.fuse_object(existing, obj)
 
                 gx, gy = obj.position.to_grid(self.cell_size)
                 self._fuser.fuse_occupied_cell(

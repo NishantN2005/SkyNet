@@ -39,6 +39,9 @@ app = FastAPI(
 _world_model = WorldModel()
 _query_engine = QueryEngine(_world_model)
 
+# Current frame index per camera, updated by ingest clients
+_camera_frames: dict[str, int] = {}
+
 
 # ---------------------------------------------------------------------------
 # Utility
@@ -124,3 +127,16 @@ def get_world() -> WorldState:
 def get_robots() -> list[RobotState]:
     """Return the last known state of all active robots."""
     return list(_world_model.get_robot_states().values())
+
+
+@app.post("/frames", tags=["write"], status_code=200)
+def update_frames(frames: dict[str, int]) -> dict:
+    """Update current frame index for one or more cameras."""
+    _camera_frames.update(frames)
+    return {"status": "ok"}
+
+
+@app.get("/frames", tags=["read"])
+def get_frames() -> dict[str, int]:
+    """Return current frame index per camera."""
+    return _camera_frames
