@@ -1,5 +1,5 @@
 """
-Data contracts for the SkyNet SDK.
+Data contracts for the Canopy SDK.
 
 All models use Pydantic v2. These are the canonical types passed between
 robots, the WorldModel, the fusion engine, and the query layer.

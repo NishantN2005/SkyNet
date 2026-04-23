@@ -1,7 +1,7 @@
 """
-EPFL POM Dataset ingestion pipeline for SkyNet.
+EPFL POM Dataset ingestion pipeline for Canopy.
 
-Reads the POM lab sequence (6p-c*.avi) and feeds frames into the SkyNet
+Reads the POM lab sequence (6p-c*.avi) and feeds frames into the Canopy
 WorldModel as if each camera were a separate robot with a known pose.
 
 Ground truth positions from gt_lab_6p.txt are used as robot_pose for each
@@ -33,7 +33,7 @@ import cv2
 import httpx
 import numpy as np
 
-from skynet.models import DetectedObject, ObservationReport, Pose2D
+from canopy.models import DetectedObject, ObservationReport, Pose2D
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +235,7 @@ def run_pom_ingest(
         # Save a calibration JSON for ghost_stream to use
         if save_configs:
             import json
-            from skynet.bridge.config import CameraConfig, save_config
+            from canopy.bridge.config import CameraConfig, save_config
             cfg = CameraConfig(
                 camera_id=f"camera_{cam_id}",
                 camera_source=str(video_path),
@@ -380,7 +380,7 @@ def run_pom_ingest(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Ingest EPFL POM lab sequence into SkyNet WorldModel."
+        description="Ingest EPFL POM lab sequence into Canopy WorldModel."
     )
     parser.add_argument("--dataset-dir", default="datasets/pom_lab",
                         help="Directory containing 6p-c*.avi and calibration files")

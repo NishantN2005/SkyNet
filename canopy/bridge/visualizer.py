@@ -1,5 +1,5 @@
 """
-SkyNet Rerun Visualizer — live 3D world model visualization.
+Canopy Rerun Visualizer — live 3D world model visualization.
 
 Opens a Rerun viewer showing:
   - Floor plane representing the tracked area
@@ -25,7 +25,7 @@ import numpy as np
 import rerun as rr
 import rerun.blueprint as rrb
 
-from skynet.models import WorldState
+from canopy.models import WorldState
 
 
 # ---------------------------------------------------------------------------
@@ -232,7 +232,7 @@ def run_visualizer(
 ) -> None:
 
     # Init Rerun with a fixed recording ID so pom_ingest can join the same session
-    rr.init("SkyNet WorldModel", recording_id="skynet-live", spawn=True)
+    rr.init("Canopy WorldModel", recording_id="canopy-live", spawn=True)
 
     # Build blueprint — 3D world on top, camera feeds on bottom
     cam_panels = [
@@ -277,7 +277,7 @@ def run_visualizer(
 
     interval = 1.0 / refresh_hz
     logged_cameras: set[str] = set()
-    print(f"SkyNet Rerun visualizer running at {refresh_hz}Hz")
+    print(f"Canopy Rerun visualizer running at {refresh_hz}Hz")
     print("Rerun viewer should open automatically.")
     print("Ctrl+C to stop.\n")
 
@@ -329,7 +329,7 @@ def run_visualizer(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Live 3D Rerun visualization of the SkyNet WorldModel."
+        description="Live 3D Rerun visualization of the Canopy WorldModel."
     )
     parser.add_argument("--api-url", default="http://localhost:8000")
     parser.add_argument("--world-width", type=float, default=6.0)

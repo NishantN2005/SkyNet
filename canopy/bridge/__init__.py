@@ -1,5 +1,5 @@
 """
-SkyNet camera bridge — connects real cameras to the WorldModel HTTP API.
+Canopy camera bridge — connects real cameras to the WorldModel HTTP API.
 
 Usage:
     # Step 1: calibrate each camera once

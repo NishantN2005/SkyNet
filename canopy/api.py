@@ -18,18 +18,18 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
-from skynet.models import (
+from canopy.models import (
     ObservationReport,
     QueryRequest,
     QueryResult,
     RobotState,
     WorldState,
 )
-from skynet.queries import QueryEngine
-from skynet.world_model import WorldModel
+from canopy.queries import QueryEngine
+from canopy.world_model import WorldModel
 
 app = FastAPI(
-    title="SkyNet WorldModel API",
+    title="Canopy WorldModel API",
     description="Collaborative spatial awareness — shared world model for multi-robot fleets.",
     version="0.1.0",
 )

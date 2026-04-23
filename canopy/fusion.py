@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from skynet.models import DetectedObject, FreeSpaceCell, Pose2D
+from canopy.models import DetectedObject, FreeSpaceCell, Pose2D
 
 # Grid cell values — mirrors OccupancyCellState enum for fast numpy ops
 CELL_UNKNOWN: int = 0

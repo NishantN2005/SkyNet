@@ -11,13 +11,13 @@ from __future__ import annotations
 
 import time
 
-from skynet.models import (
+from canopy.models import (
     DetectedObject,
     FreeSpaceCell,
     QueryRequest,
     QueryResult,
 )
-from skynet.world_model import WorldModel
+from canopy.world_model import WorldModel
 
 CELL_FREE: int = 1
 CELL_OCCUPIED: int = 2

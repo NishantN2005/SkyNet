@@ -1,15 +1,15 @@
 """
-SkyNet SDK — Collaborative Spatial Awareness for Multi-Robot Fleets.
+Canopy SDK — Collaborative Spatial Awareness for Multi-Robot Fleets.
 
 Each robot publishes structured observations into a shared WorldModel.
 Every robot's effective perception = the fleet's combined FOV.
 
 Quick start:
-    from skynet.world_model import WorldModel
-    from skynet.queries import QueryEngine
+    from canopy.world_model import WorldModel
+    from canopy.queries import QueryEngine
 """
 
-from skynet.models import (
+from canopy.models import (
     Pose2D,
     RobotState,
     DetectedObject,
@@ -20,8 +20,8 @@ from skynet.models import (
     QueryRequest,
     QueryResult,
 )
-from skynet.world_model import WorldModel
-from skynet.queries import QueryEngine
+from canopy.world_model import WorldModel
+from canopy.queries import QueryEngine
 
 __all__ = [
     "Pose2D",

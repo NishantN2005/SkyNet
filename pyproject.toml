@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "skynet-sdk"
+name = "canopy-sdk"
 version = "0.1.0"
 description = "Collaborative spatial awareness SDK for multi-robot fleets"
 requires-python = ">=3.11"
@@ -22,4 +22,4 @@ dev = ["pytest>=8.0.0", "httpx>=0.27.0"]
 where = ["."]
 
 [project.scripts]
-skynet-demo = "skynet.main:run_demo"
+canopy-demo = "canopy.main:run_demo"

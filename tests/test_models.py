@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from skynet.models import (
+from canopy.models import (
     DetectedObject,
     FreeSpaceCell,
     ObservationReport,

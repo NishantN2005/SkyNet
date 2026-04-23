@@ -3,8 +3,8 @@
 import numpy as np
 import pytest
 
-from skynet.fusion import CELL_FREE, CELL_OCCUPIED, CELL_UNKNOWN, ObservationFuser
-from skynet.models import DetectedObject, FreeSpaceCell, Pose2D
+from canopy.fusion import CELL_FREE, CELL_OCCUPIED, CELL_UNKNOWN, ObservationFuser
+from canopy.models import DetectedObject, FreeSpaceCell, Pose2D
 
 
 def _make_obj(

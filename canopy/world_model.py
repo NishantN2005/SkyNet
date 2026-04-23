@@ -16,8 +16,8 @@ import time
 
 import numpy as np
 
-from skynet.fusion import CELL_OCCUPIED, KalmanTracker, ObservationFuser
-from skynet.models import (
+from canopy.fusion import CELL_OCCUPIED, KalmanTracker, ObservationFuser
+from canopy.models import (
     DetectedObject,
     ObservationReport,
     RobotState,

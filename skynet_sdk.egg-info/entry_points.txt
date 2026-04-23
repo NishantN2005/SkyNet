@@ -1,2 +1,0 @@
-[console_scripts]
-skynet-demo = skynet.main:run_demo
