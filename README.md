@@ -20,19 +20,32 @@ This is relevant to:
 ## How It Works
 
 ```
-┌─────────────────────────────────────────┐
-│         WorldModel  (FastAPI)           │
-│   Fused object registry + occupancy     │
-│   grid, updated in real time            │
-└──────────┬──────────────────────────────┘
-           │  POST /ingest
-   ┌────────┴────────┐
-   │                 │
-Camera 0          Camera 2
-(YOLOv8 detects   (YOLOv8 detects
- people)           people)
-   │                 │
-foot pixel → homography → world coords (metres)
+                        ┌──────────────────────────────────────────────────┐
+                        │              WorldModel  (FastAPI)               │
+                        │                                                  │
+                        │  ┌─────────────────┐   ┌──────────────────────┐ │
+     POST /ingest  ───► │  │  Object Registry │   │   Occupancy Grid     │ │
+                        │  │  (Kalman-smooth  │   │   (FREE / OCCUPIED / │ │
+     POST /ingest  ───► │  │   dedup tracks)  │   │    UNKNOWN cells)    │ │
+                        │  └─────────────────┘   └──────────────────────┘ │
+     POST /ingest  ───► │                                                  │
+                        │       Proximity dedup · Confidence decay         │
+      GET /world   ◄─── │                                                  │
+      GET /query   ◄─── │  POST /ingest · GET /world · GET /query         │
+                        │  GET /robots · GET /frames                       │
+                        └──────────────────────────────────────────────────┘
+                               ▲  ▲  ▲                    │
+                    ┌──────────┘  │  └──────────┐         │ GET /world
+                    │             │              │         ▼
+             ┌──────┴──────┐  ┌──┴────────┐  ┌─┴──────────────┐   ┌────────────────┐
+             │  Robot A    │  │  Robot B  │  │   Robot C      │   │  3D Visualizer │
+             │  Camera 0   │  │  Camera 2 │  │  (future: AMR, │   │  (Rerun)       │
+             │  YOLOv8     │  │  YOLOv8   │  │   drone, lidar)│   │                │
+             │  homography │  │  homography│  └────────────────┘   │ • World model  │
+             └──────┬──────┘  └──────┬────┘                        │ • Ghost tracks │
+                    │                │                              │ • Camera feeds │
+             pixel → world    pixel → world                        └────────────────┘
+             (metres)         (metres)
 ```
 
 Each camera runs **YOLOv8** to detect people in its video feed. Detections are projected from pixel space to real-world coordinates using a **ground-plane homography** calibrated for the camera. The world-coordinate position is posted to the shared `WorldModel` over HTTP.
@@ -150,15 +163,6 @@ python -m canopy.bridge.pom_ingest \
 - Persistent track IDs across re-entry using appearance embeddings
 - Distributed WorldModel over gRPC
 
----
 
-## Related Work
 
-- **PETS 2009** / **DukeMTMC** — standard multi-camera pedestrian tracking benchmarks
-- **EKF/UKF SLAM** — extended Kalman filter approaches to simultaneous localization and mapping
-- **DAIR-V2X** — vehicle-to-infrastructure perception sharing for autonomous driving
-- **OpenVINS** — open-source visual-inertial navigation used in real robot deployments
-
----
-
-*Built as a proof-of-concept. Not production software.*
+*Built as a proof-of-concept. Not finished*
