@@ -107,10 +107,10 @@ def _log_cameras(world: "WorldState", world_w: float, world_h: float) -> None:
     tilt = -0.6        # downward Z component of look direction
 
     wall_positions = {
-        "camera_0": [world_w, world_h,     cam_height],   # bottom-right corner
+        "camera_0": [0.0,     world_h,     cam_height],   # bottom-left corner, points right
         "camera_1": [0.0,     world_h / 2, cam_height],   # left wall
-        "camera_2": [world_w, world_h / 2, cam_height],   # right wall
-        "camera_3": [0.0,     world_h,     cam_height],   # bottom-left corner
+        "camera_2": [world_w, world_h,     cam_height],   # bottom-right corner, points left
+        "camera_3": [world_w, world_h / 2, cam_height],   # right wall
     }
 
     room_cx = world_w / 2

@@ -15,12 +15,66 @@ from __future__ import annotations
 
 import numpy as np
 
-from skynet.models import DetectedObject, FreeSpaceCell
+from skynet.models import DetectedObject, FreeSpaceCell, Pose2D
 
 # Grid cell values — mirrors OccupancyCellState enum for fast numpy ops
 CELL_UNKNOWN: int = 0
 CELL_FREE: int = 1
 CELL_OCCUPIED: int = 2
+
+
+class KalmanTracker:
+    """
+    Per-object 2D Kalman filter (constant-velocity model).
+
+    State vector: [x, y, vx, vy]
+    Measurement:  [x, y]
+
+    Smooths noisy YOLO detections and fills in positions between frames.
+    """
+
+    def __init__(self, x: float, y: float) -> None:
+        # State: [x, y, vx, vy]
+        self.x = np.array([x, y, 0.0, 0.0], dtype=np.float64)
+
+        # State transition (constant velocity)
+        self.F = np.array([
+            [1, 0, 1, 0],
+            [0, 1, 0, 1],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ], dtype=np.float64)
+
+        # Measurement matrix (we observe x, y only)
+        self.H = np.array([
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+        ], dtype=np.float64)
+
+        # State covariance
+        self.P = np.eye(4, dtype=np.float64) * 1.0
+
+        # Process noise (how much we trust the motion model)
+        self.Q = np.eye(4, dtype=np.float64) * 0.1
+
+        # Measurement noise (how much we trust the detector)
+        self.R = np.eye(2, dtype=np.float64) * 0.5
+
+    def predict(self) -> None:
+        self.x = self.F @ self.x
+        self.P = self.F @ self.P @ self.F.T + self.Q
+
+    def update(self, mx: float, my: float) -> None:
+        z = np.array([mx, my], dtype=np.float64)
+        y = z - self.H @ self.x
+        S = self.H @ self.P @ self.H.T + self.R
+        K = self.P @ self.H.T @ np.linalg.inv(S)
+        self.x = self.x + K @ y
+        self.P = (np.eye(4) - K @ self.H) @ self.P
+
+    @property
+    def position(self) -> tuple[float, float]:
+        return float(self.x[0]), float(self.x[1])
 
 
 class ObservationFuser:

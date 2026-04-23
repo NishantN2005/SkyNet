@@ -16,7 +16,7 @@ import time
 
 import numpy as np
 
-from skynet.fusion import CELL_OCCUPIED, ObservationFuser
+from skynet.fusion import CELL_OCCUPIED, KalmanTracker, ObservationFuser
 from skynet.models import (
     DetectedObject,
     ObservationReport,
@@ -51,6 +51,7 @@ class WorldModel:
         self.confidence_decay_rate = confidence_decay_rate
 
         self._objects: dict[str, DetectedObject] = {}
+        self._trackers: dict[str, KalmanTracker] = {}
         self._grid = np.zeros((grid_width, grid_height), dtype=np.uint8)
         self._confidence = np.zeros((grid_width, grid_height), dtype=np.float32)
         self._robot_states: dict[str, RobotState] = {}
@@ -80,6 +81,10 @@ class WorldModel:
             )
 
             # 2. Fuse detected objects + mark their cells occupied
+            # Predict all existing trackers forward one step
+            for tracker in self._trackers.values():
+                tracker.predict()
+
             for obj in report.detected_objects:
                 # Proximity deduplication: if a nearby object from a different
                 # camera already exists within 0.5m, merge into it instead of
@@ -96,9 +101,26 @@ class WorldModel:
 
                 target_id = merge_id if merge_id else obj.object_id
                 existing = self._objects.get(target_id)
-                self._objects[target_id] = self._fuser.fuse_object(existing, obj)
+                fused = self._fuser.fuse_object(existing, obj)
 
-                gx, gy = obj.position.to_grid(self.cell_size)
+                # Kalman update: create tracker on first sight, update on subsequent
+                if target_id not in self._trackers:
+                    self._trackers[target_id] = KalmanTracker(
+                        fused.position.x, fused.position.y
+                    )
+                else:
+                    self._trackers[target_id].update(
+                        fused.position.x, fused.position.y
+                    )
+
+                # Replace raw position with Kalman-smoothed estimate
+                sx, sy = self._trackers[target_id].position
+                fused = fused.model_copy(update={
+                    "position": fused.position.model_copy(update={"x": sx, "y": sy})
+                })
+                self._objects[target_id] = fused
+
+                gx, gy = fused.position.to_grid(self.cell_size)
                 self._fuser.fuse_occupied_cell(
                     self._grid, self._confidence,
                     gx, gy, obj.confidence,
@@ -120,11 +142,15 @@ class WorldModel:
             )
             self._last_decay_time = now
 
-            # 5. Prune stale objects (not seen in the last 2 seconds)
+            # 5. Prune stale objects and their trackers (not seen in last 2s)
             cutoff = now - 2.0
             self._objects = {
                 oid: obj for oid, obj in self._objects.items()
                 if obj.timestamp >= cutoff
+            }
+            self._trackers = {
+                oid: t for oid, t in self._trackers.items()
+                if oid in self._objects
             }
 
     # ------------------------------------------------------------------
@@ -167,6 +193,7 @@ class WorldModel:
         """Clear all state (useful for test setup)."""
         with self._lock:
             self._objects.clear()
+            self._trackers.clear()
             self._robot_states.clear()
             self._grid[:] = 0
             self._confidence[:] = 0.0
